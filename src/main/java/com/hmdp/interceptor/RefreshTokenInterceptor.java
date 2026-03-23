@@ -1,6 +1,6 @@
 package com.hmdp.interceptor;
 
-
+import cn.hutool.core.util.StrUtil;
 import com.hmdp.dto.UserDTO;
 import com.hmdp.utils.RedisConstants;
 import com.hmdp.utils.UserHolder;
@@ -28,10 +28,10 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
         // 跟据请求头获取token
         String token = request.getHeader("authorization");
 
-        if (token == null || token.isEmpty()) {
+        if (StrUtil.isBlank(token)) { //StrUtil.isBlank(token)检查字符串，非空且非纯空白，非制表符返回false,
             return true;
         }
-        String key= RedisConstants.LOGIN_USER_KEY+token;
+        String key = RedisConstants.LOGIN_USER_KEY + token;
         // 根据token从redis中获取用户信息
         Map<Object, Object> map = stringRedisTemplate.opsForHash().entries(key);
 
@@ -39,7 +39,7 @@ public class RefreshTokenInterceptor implements HandlerInterceptor {
             return true;
         }
         UserDTO user = new UserDTO();
-        Long id =Long.valueOf(map.get("id").toString());
+        Long id = Long.valueOf(map.get("id").toString());
         String nickName = map.get("nickName").toString();
         String icon = map.get("icon").toString();
         user.setId(id);

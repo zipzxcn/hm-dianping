@@ -1,4 +1,5 @@
 package com.hmdp.interceptor;
+
 import com.hmdp.dto.UserDTO;
 
 import com.hmdp.utils.UserHolder;
@@ -9,9 +10,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 
-
 public class LoginInterceptor implements HandlerInterceptor {
-
 
 
     @Override
@@ -20,7 +19,7 @@ public class LoginInterceptor implements HandlerInterceptor {
         // 跟据请求头获取token
         UserDTO user = UserHolder.getUser();
 
-        if (user == null ) {
+        if (user == null) {
             response.setStatus(401);
             return false;
         }
