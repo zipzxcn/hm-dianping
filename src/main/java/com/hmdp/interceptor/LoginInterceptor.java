@@ -1,69 +1,31 @@
 package com.hmdp.interceptor;
-
-import cn.hutool.core.bean.BeanUtil;
 import com.hmdp.dto.UserDTO;
 
-import com.hmdp.entity.User;
-import com.hmdp.utils.RedisConstants;
 import com.hmdp.utils.UserHolder;
-import org.springframework.data.redis.core.StringRedisTemplate;
-import org.springframework.lang.Nullable;
+
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+
+
 
 public class LoginInterceptor implements HandlerInterceptor {
 
-    private final StringRedisTemplate stringRedisTemplate;
 
-    public LoginInterceptor(StringRedisTemplate stringRedisTemplate) {
-        this.stringRedisTemplate = stringRedisTemplate;
-    }
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
 
-        // 1.获取session
-        //User u = (User) request.getSession().getAttribute("user");
         // 跟据请求头获取token
-        String token = request.getHeader("authorization");
+        UserDTO user = UserHolder.getUser();
 
-
-        if (token == null || token.isEmpty()) {
+        if (user == null ) {
             response.setStatus(401);
             return false;
         }
-        String key= RedisConstants.LOGIN_USER_KEY+token;
-        // 根据token从redis中获取用户信息
-        Map<Object, Object> map = stringRedisTemplate.opsForHash().entries(key);
 
-        if (map.isEmpty()) {
-            return false;
-        }
-        UserDTO user = new UserDTO();
-        Long id =Long.valueOf(map.get("id").toString());
-        String nickName = map.get("nickName").toString();
-        String icon = map.get("icon").toString();
-        user.setId(id);
-        user.setNickName(nickName);
-        user.setIcon(icon);
-
-        // 3.保存用户信息
-        UserHolder.saveUser(user);
-
-        // 刷新token有效期
-        stringRedisTemplate.expire(token, 30, TimeUnit.MINUTES);
-
-        // 4.放行
         return true;
-    }
 
-    @Override
-    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, @Nullable Exception ex) throws Exception {
-        // 移除用户信息
-        UserHolder.removeUser();
     }
 }
