@@ -4,6 +4,7 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.ShopType;
 import com.hmdp.mapper.ShopTypeMapper;
@@ -36,19 +37,21 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
 
         String key = "shopType";
         // 1.1.获取List长度
-        Long length = stringRedisTemplate.opsForList().size(key);
-        if (length != null && length > 0) {
-            // 1.2.key存在，从redis中返回数据
-            List<String> shopTypes = stringRedisTemplate.opsForList().range(key, 0, length);
+        // TODO bug待修复 缓存中存在，直接返回
+        List<String> shopJsons = stringRedisTemplate.opsForList().range(key, 0, -1);
+        if (shopJsons != null && !shopJsons.isEmpty()) {
+            List<ShopType> shopTypes = shopJsons.stream().map(shopJson -> JSONUtil.toBean(shopJson, ShopType.class)
+            ).collect(Collectors.toList());
+
             return Result.ok(shopTypes);
         }
 
         // 2.key不存在，查询数据库
         List<ShopType> shopTypeList = lambdaQuery().orderByAsc(ShopType::getSort).list();
 
-        List<String> stringList = shopTypeList.stream().map(JSONUtil::toJsonStr).collect(Collectors.toList());
+        shopJsons = shopTypeList.stream().map(JSONUtil::toJsonStr).collect(Collectors.toList());
         // 3.将list存入redis
-        stringRedisTemplate.opsForList().leftPushAll(key, stringList);
+        stringRedisTemplate.opsForList().rightPushAll(key, shopJsons);
 
         return Result.ok(shopTypeList);
     }

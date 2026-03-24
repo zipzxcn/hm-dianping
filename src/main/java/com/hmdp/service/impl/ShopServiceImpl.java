@@ -1,6 +1,6 @@
 package com.hmdp.service.impl;
 
-import cn.hutool.core.bean.BeanUtil;
+
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.hmdp.dto.Result;
@@ -14,6 +14,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -38,9 +39,7 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         String shopJson = stringRedisTemplate.opsForValue().get(key);
         if (!StringUtils.isBlank(shopJson)) {
             // 1.1.缓存中存在，返回
-            log.debug("从缓存获取到数据: {}", shopJson);
             Shop cacheShop = JSONUtil.toBean(shopJson, Shop.class);
-            log.debug("转换后的对象: {}", cacheShop);
             return Result.ok(cacheShop);
         }
 
@@ -51,9 +50,25 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
             return Result.fail("商户不存在！");
         }
 
-        // 3.存入redis
-        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop));
+        // 3.存入redis,设置过期时间
+        stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(shop), RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
 
         return Result.ok(shop);
     }
+
+    @Override
+    public Result update(Shop shop) {
+        Long id = shop.getId();
+        if (id == null) {
+            return Result.fail("商户不存在！");
+        }
+        // 修改数据
+        this.updateById(shop);
+
+        // 移除缓存
+        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + id);
+        return Result.ok();
+    }
+
+
 }
