@@ -37,7 +37,6 @@ public class ShopTypeServiceImpl extends ServiceImpl<ShopTypeMapper, ShopType> i
 
         String key = "shopType";
         // 1.1.获取List长度
-        // TODO bug待修复 缓存中存在，直接返回
         List<String> shopJsons = stringRedisTemplate.opsForList().range(key, 0, -1);
         if (shopJsons != null && !shopJsons.isEmpty()) {
             List<ShopType> shopTypes = shopJsons.stream().map(shopJson -> JSONUtil.toBean(shopJson, ShopType.class)
