@@ -15,6 +15,6 @@ class HmDianPingApplicationTests {
 
     @Test
     void testSaveShop() {
-        shopService.saveShop(1L, 10L);
+        shopService.saveShop(1L, 5L);
     }
 }
