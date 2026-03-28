@@ -3,7 +3,7 @@ package com.hmdp.utils;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.hmdp.entity.Shop;
+
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -114,23 +114,19 @@ public class CacheClient {
                 if (!StringUtils.isBlank(jsonStr)) {
                     return JSONUtil.toBean(jsonStr, type);
                 }
-                try {
-                    T apply = dbFallback.apply(id);
 
-                    if (apply == null) {
-                        stringRedisTemplate.opsForValue().set(key, "", RedisConstants.LOCK_SHOP_TTL, TimeUnit.MINUTES);
-                        return null;
-                    }
+                T apply = dbFallback.apply(id);
 
-                    // 存入redis,设置过期时间
-                    stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(apply), time, unit);
-
-                    return apply;
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    unlock(keyLock);
+                if (apply == null) {
+                    stringRedisTemplate.opsForValue().set(key, "", RedisConstants.LOCK_SHOP_TTL, TimeUnit.MINUTES);
+                    return null;
                 }
+
+                // 存入redis,设置过期时间
+                stringRedisTemplate.opsForValue().set(key, JSONUtil.toJsonStr(apply), time, unit);
+                // 释放锁
+                unlock(keyLock);
+                return apply;
             } else {
                 try {
                     // 获取锁失败，线程休眠等待
@@ -142,7 +138,6 @@ public class CacheClient {
             }
         }
     }
-
 
     // 根据指定的key查询缓存，并反序列化为指定类型，需要利用逻辑过期解决缓存击穿问题将逻辑进行封装
     public <T, R> T jsonToObjectBroken2(R id, String partKey, Class<T> type, Function<R, T> dbFallback, Long time, TimeUnit unit) {
