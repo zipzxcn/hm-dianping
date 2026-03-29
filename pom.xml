@@ -58,7 +58,11 @@
             <artifactId>hutool-all</artifactId>
             <version>5.7.17</version>
         </dependency>
-
+        <!--Spring AOP 本身不实现切面语法，它借用 AspectJ 的 weaving（织入）能力！-->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+        </dependency>
 
     </dependencies>
 

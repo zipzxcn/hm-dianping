@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hmdp.utils.RedisIdWorker;
 import com.hmdp.utils.UserHolder;
 import lombok.RequiredArgsConstructor;
+import org.springframework.aop.framework.AopContext;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,12 +37,11 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     private final SeckillVoucherMapper seckillVoucherMapper;
 
-
-    @Transactional
     @Override
     public Result seckillVoucher(Long voucherId) {
         // 查询优惠券信息
         SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
+
         if (seckillVoucher == null) {
             return Result.fail("错误！优惠券不存在！");
         }
@@ -55,15 +55,34 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             // 当前时间在秒杀时间段之后 已结束
             return Result.fail("当前未在秒杀时间段！");
         }
-        // 判断库存是否充足
 
+        // 判断库存是否充足
         if (seckillVoucher.getStock() < 1) {
             // 库存不足
             return Result.fail("当前库存不足1！");
         }
+        Long userId = UserHolder.getUser().getId();
+        // 返回订单 如果在事务方法中加锁 会先释放锁才提交事务 出现线程安全问题
+        synchronized (userId.toString().intern()) { // userId.toString().intern() 如果常量池中存在用户id拿出对应引用而不是创建新对象从而使用用户id作为锁对象
+            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+            return proxy.createVoucherOrder(voucherId,userId); // 使用代理对象 确保事务生效
+        }
+    }
+
+    @Transactional
+    public Result createVoucherOrder(Long voucherId,Long userId){
+
+        // 判断用户是否有订单，线程安全问题
+        int count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
+        if (count > 0) {
+            return Result.fail("限购一次！");
+        }
         // 扣减库存
         // 确保原子操作 并发安全问题，超卖问题
         boolean success = seckillVoucherMapper.updateById(voucherId);
+
+        /*seckillVoucherService.update().setSql("stock = stock-1").
+                eq("voucher_id",voucherId).gt("stock",0).update();*/
         /*
         扣减发生线程安全问题
         LambdaUpdateWrapper<SeckillVoucher> wrapper = new LambdaUpdateWrapper<>();
@@ -72,21 +91,18 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
         // boolean success = seckillVoucherService.update().setSql("stock= stock -1").eq("voucher_id", voucherId).update();
 
-
-
         if (!success) {
             return Result.fail("当前库存不足2！");
         }
         // 创建订单
         VoucherOrder voucherOrder = new VoucherOrder();
         long voucherOrderId = redisIdWorker.nextId("order");
-        Long userId = UserHolder.getUser().getId();
+
         voucherOrder.setId(voucherOrderId);
         voucherOrder.setUserId(userId);
         voucherOrder.setVoucherId(voucherId);
         save(voucherOrder);
 
-        // 返回订单
         return Result.ok(voucherOrderId);
     }
 }
