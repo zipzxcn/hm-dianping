@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
+import com.hmdp.mapper.SeckillVoucherMapper;
+import com.hmdp.mapper.VoucherMapper;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
@@ -32,6 +34,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     private final RedisIdWorker redisIdWorker;
 
+    private final SeckillVoucherMapper seckillVoucherMapper;
+
+
     @Transactional
     @Override
     public Result seckillVoucher(Long voucherId) {
@@ -51,18 +56,25 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             return Result.fail("当前未在秒杀时间段！");
         }
         // 判断库存是否充足
-        Integer stock = seckillVoucher.getStock();
-        if (stock < 1) {
+
+        if (seckillVoucher.getStock() < 1) {
             // 库存不足
             return Result.fail("当前库存不足1！");
         }
         // 扣减库存
-        --stock;
+        // 确保原子操作 并发安全问题，超卖问题
+        boolean success = seckillVoucherMapper.updateById(voucherId);
+        /*
+        扣减发生线程安全问题
         LambdaUpdateWrapper<SeckillVoucher> wrapper = new LambdaUpdateWrapper<>();
-        wrapper.eq(SeckillVoucher::getVoucherId,voucherId).set(SeckillVoucher::getStock,stock);
-        boolean success = seckillVoucherService.update(wrapper);
+        wrapper.eq(SeckillVoucher::getVoucherId, voucherId).set(SeckillVoucher::getStock, seckillVoucher.getStock()-1);
+        boolean success = seckillVoucherService.update(wrapper);*/
 
-        if (!success){
+        // boolean success = seckillVoucherService.update().setSql("stock= stock -1").eq("voucher_id", voucherId).update();
+
+
+
+        if (!success) {
             return Result.fail("当前库存不足2！");
         }
         // 创建订单
