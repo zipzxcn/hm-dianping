@@ -106,7 +106,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 4.3.将用户信息存入redis
         stringRedisTemplate.opsForHash().putAll(key, map);
         // 4.4.设置key的过期时间
-        stringRedisTemplate.expire(key, RedisConstants.CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(key, RedisConstants.CACHE_SHOP_TTL, TimeUnit.DAYS); // TODO token有效期修改
         // 4.5 使验证码失效
         String loginKey = RedisConstants.LOGIN_CODE_KEY + phone;
         stringRedisTemplate.delete(loginKey);

@@ -66,8 +66,8 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
         Long userId = UserHolder.getUser().getId();
         // 获取锁
-        SimpleRedisLock simpleRedisLock = new SimpleRedisLock("order" + userId, stringRedisTemplate);
-        boolean isLock = simpleRedisLock.tryLock(1200);
+        SimpleRedisLock simpleRedisLock = new SimpleRedisLock("userId:"+userId, stringRedisTemplate); //使用用户id作为key确保锁住同一用户
+        boolean isLock = simpleRedisLock.tryLock(1000);
         if (!isLock) {
             // 没拿到锁 失败
             return Result.fail("不允许重复下单！");
@@ -77,7 +77,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
             return proxy.createVoucherOrder(voucherId,userId); // 使用代理对象 确保事务生效
         } finally {
-            // 释放suo
+            // 释放锁
             simpleRedisLock.unlock();
         }
 
@@ -125,7 +125,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
         // 扣减库存
         // 确保原子操作 并发安全问题，超卖问题
-        boolean success = seckillVoucherMapper.updateById(voucherId);
+        boolean success = seckillVoucherMapper.deduct(voucherId);
 
         /*seckillVoucherService.update().setSql("stock = stock-1").
                 eq("voucher_id",voucherId).gt("stock",0).update();*/

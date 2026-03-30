@@ -1,5 +1,6 @@
 package com.hmdp.utils;
 
+import cn.hutool.core.lang.UUID;
 import org.springframework.data.redis.core.StringRedisTemplate;
 
 import java.util.concurrent.TimeUnit;
@@ -12,7 +13,7 @@ public class SimpleRedisLock implements ILock {
 
     private static final String KEY_PREFIX = "order:";  // key前缀
 
-
+    private static final String ID_PREFIX = UUID.randomUUID(true).toString() + "-"; // 标识不同进程
 
     public SimpleRedisLock(String name, StringRedisTemplate stringRedisTemplate) {
         this.name = name;
@@ -21,18 +22,25 @@ public class SimpleRedisLock implements ILock {
 
     @Override
     public boolean tryLock(long timeoutSec) {
-        // 获取线程id
-        long threadId = Thread.currentThread().getId();
+        // 获取线程标识
+        String threadId = ID_PREFIX + Thread.currentThread().getId();
         String key = KEY_PREFIX + name;
         // 获取锁
-        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, String.valueOf(threadId), timeoutSec, TimeUnit.SECONDS);
+        Boolean success = stringRedisTemplate.opsForValue().setIfAbsent(key, threadId, timeoutSec, TimeUnit.SECONDS);
         return Boolean.TRUE.equals(success);
     }
 
     @Override
     public void unlock() {
+        // 获取线程标识
+        String threadId = ID_PREFIX + Thread.currentThread().getId();
+        // 根据key判断线程标识是否与锁的value相同
         String key = KEY_PREFIX + name;
-        // 移除锁
-        stringRedisTemplate.delete(key);
+        String value = stringRedisTemplate.opsForValue().get(key);
+        if (threadId.equals(value)){
+            // 是当前线程的锁 移除
+            stringRedisTemplate.delete(key);
+        }
+
     }
 }
