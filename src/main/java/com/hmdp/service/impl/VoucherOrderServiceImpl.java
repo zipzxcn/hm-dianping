@@ -1,11 +1,9 @@
 package com.hmdp.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.hmdp.dto.Result;
 import com.hmdp.entity.SeckillVoucher;
 import com.hmdp.entity.VoucherOrder;
 import com.hmdp.mapper.SeckillVoucherMapper;
-import com.hmdp.mapper.VoucherMapper;
 import com.hmdp.mapper.VoucherOrderMapper;
 import com.hmdp.service.ISeckillVoucherService;
 import com.hmdp.service.IVoucherOrderService;
@@ -66,7 +64,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }
         Long userId = UserHolder.getUser().getId();
         // 获取锁
-        SimpleRedisLock simpleRedisLock = new SimpleRedisLock("userId:"+userId, stringRedisTemplate); //使用用户id作为key确保锁住同一用户
+        SimpleRedisLock simpleRedisLock = new SimpleRedisLock("userId:" + userId, stringRedisTemplate); //使用用户id作为key确保锁住同一用户
         boolean isLock = simpleRedisLock.tryLock(1000);
         if (!isLock) {
             // 没拿到锁 失败
@@ -75,7 +73,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         // 返回订单 如果在事务方法中加锁 会先释放锁才提交事务 出现线程安全问题
         try {
             IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-            return proxy.createVoucherOrder(voucherId,userId); // 使用代理对象 确保事务生效
+            return proxy.createVoucherOrder(voucherId, userId); // 使用代理对象 确保事务生效
         } finally {
             // 释放锁
             simpleRedisLock.unlock();
@@ -116,7 +114,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
     }*/
 
     @Transactional
-    public Result createVoucherOrder(Long voucherId,Long userId){
+    public Result createVoucherOrder(Long voucherId, Long userId) {
 
         // 判断用户是否有订单，线程安全问题
         int count = query().eq("user_id", userId).eq("voucher_id", voucherId).count();
