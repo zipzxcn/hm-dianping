@@ -72,6 +72,20 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
         return Result.ok(shop);
     }
 
+    @Override
+    public Result update(Shop shop) {
+        Long id = shop.getId();
+        if (id == null) {
+            return Result.fail("商户不存在！");
+        }
+        // 修改数据
+        this.updateById(shop);
+
+        // 移除缓存
+        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + id);
+        return Result.ok();
+    }
+
     /// 缓存击穿 递归版本
     /*public Shop queryWithMutex(Long id) {
         // 1.根据id从redis中查找缓存数据
@@ -300,19 +314,6 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
     public void unlock(String key) {
         stringRedisTemplate.delete(key);
     }*/
-    @Override
-    public Result update(Shop shop) {
-        Long id = shop.getId();
-        if (id == null) {
-            return Result.fail("商户不存在！");
-        }
-        // 修改数据
-        this.updateById(shop);
-
-        // 移除缓存
-        stringRedisTemplate.delete(RedisConstants.CACHE_SHOP_KEY + id);
-        return Result.ok();
-    }
 
 
 }

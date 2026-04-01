@@ -33,7 +33,7 @@ public class RedisIdWorker {
         long nowSecond = now.toEpochSecond(ZoneOffset.UTC);
         long timestamp = nowSecond - BEGIN_TIMESTAMP;
 
-        // 生成序列号 第32位
+        // 生成序列号 低32位
         String date = now.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
         long count = stringRedisTemplate.opsForValue().increment("icr:" + keyPrefix + ":" + date);
 

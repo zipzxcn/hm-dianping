@@ -44,7 +44,7 @@ public class CacheClient {
 
     //根据指定的key查询缓存，并反序列化为指定类型，利用缓存空值的方式解决缓存穿透问题
     public <T, R> T jsonToObjectPassThrough(R id, String partKey, Class<T> type, Function<R, T> dbFallback, Long time, TimeUnit timeUnit) {
-        String key = id + partKey;
+        String key = partKey + id;
         String json = stringRedisTemplate.opsForValue().get(key);
         if (!StringUtils.isBlank(json)) {
             // 缓存中存在，返回

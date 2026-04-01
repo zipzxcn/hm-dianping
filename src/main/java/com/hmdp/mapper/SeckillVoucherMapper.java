@@ -16,6 +16,6 @@ import org.apache.ibatis.annotations.Update;
 public interface SeckillVoucherMapper extends BaseMapper<SeckillVoucher> {
 
     // 这里使用 sql 语句添加stock>0条件解决线程安全问题（乐观锁）
-    @Update("update tb_seckill_voucher set stock=stock-1 where voucher_id=#{voucherId} and stock > 0 ")
-    boolean deduct(@Param("voucherId") Long voucherId);
+/*    @Update("update tb_seckill_voucher set stock=stock-1 where voucher_id=#{voucherId} and stock > 0 ")
+    boolean deduct(@Param("voucherId") Long voucherId);*/
 }
