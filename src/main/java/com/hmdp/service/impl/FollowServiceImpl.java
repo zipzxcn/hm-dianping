@@ -40,7 +40,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     private final IUserService userService;
 
     /**
-     * 查询对用户的关注状态 已关注/未关注
+     * 查询对用户的关注状态 已关注/未关注 TODO 待完成 缓存中如果不存在，从数据库中加载缓存
      *
      * @return boolean
      */
@@ -54,8 +54,8 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     /**
      * 关注用户
      *
-     * @param followUserId
-     * @param isFollow
+     * @param followUserId 请求关注用户的id
+     * @param isFollow true or false
      * @return ok
      */
     @Override
@@ -91,7 +91,7 @@ public class FollowServiceImpl extends ServiceImpl<FollowMapper, Follow> impleme
     /**
      * 查看共同关注
      *
-     * @param lookingUserId
+     * @param lookingUserId 当前查看的用户id
      * @return List<UserDTO>
      */
     @Override
