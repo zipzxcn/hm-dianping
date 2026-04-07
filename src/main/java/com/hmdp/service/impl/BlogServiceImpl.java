@@ -166,9 +166,9 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
     /**
      * 滚动查询被关注者的笔记
      *
-     * @param max
-     * @param offset
-     * @return
+     * @param max 最大时间戳
+     * @param offset 偏移量
+     * @return ScrollResult
      */
     @Override
     public Result queryBlogOfFollow(Long max, Integer offset) {
@@ -204,7 +204,7 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
             queryBlogUser(blog);
             blog.setIsLike(isBlogLiked(blog));
         }
-
+        // 封装并返回
         ScrollResult scrollResult = new ScrollResult();
         scrollResult.setList(blogs);
         scrollResult.setOffset(os);
