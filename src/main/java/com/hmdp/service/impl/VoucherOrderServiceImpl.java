@@ -81,6 +81,15 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         SECKILL_ORDER_EXECUTOR.submit(()->{
             while (true){
                 try {
+                    // 如果消费者组不存在，创建消费者组
+                    try {
+                        // 尝试获取消费者组信息，如果不存在会抛出异常
+                        stringRedisTemplate.opsForStream().groups(queueName);
+                    } catch (Exception e) {
+                        // 消费者组不存在，创建 stream.orders 流 + g1 消费组
+                        stringRedisTemplate.opsForStream().createGroup(queueName, "g1");
+                    }
+
                     // 获取消息队列中的订单信息 xreadgroup group g1 c1 count 1 block 2000 stream.orders >
                     List<MapRecord<String, Object, Object>> list = stringRedisTemplate.opsForStream().read(
                             Consumer.from("g1", "c1"),
